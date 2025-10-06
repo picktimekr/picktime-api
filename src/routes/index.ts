@@ -1,19 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import userRoutes from './user.routes';
+import schoolRoutes from './school.routes'
 const { NotFoundError, MethodNotAllowed } = require('../errors');
 
 const router = Router();
 
 router.use('/users', userRoutes);
-
-// Test route for 405 Method Not Allowed
-router.all('/test-method', (req: Request, res: Response, next: NextFunction) => {
-  if (req.method !== 'GET') {
-    return next(new MethodNotAllowed());
-  }
-  // If it's a GET request, send a success response
-  res.status(200).send('GET request successful');
-});
+router.use('/schools', schoolRoutes);
 
 // The 405 Handler for unhandled API routes
 // This should be the last middleware on this router
