@@ -38,6 +38,7 @@ User.init(
     sequelize,
     tableName: 'users',
     timestamps: true, // createdAt, updatedAt 컬럼 자동 생성
+    underscored: true
   }
 );
 
