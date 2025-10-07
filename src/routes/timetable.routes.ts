@@ -6,11 +6,24 @@ import {
   updateTimetableController,
   deleteTimetableController,
 } from '../controllers/timetable.controller';
+import { handleValidationErrors } from '../middlewares/validator.middleware';
+import {
+  validateCreateTimetable,
+  validateUpdateTimetable,
+} from '../validators/timetable.validator';
+
+import { isAuthenticated } from '../middlewares/auth.middleware';
 
 const timetableRouter = Router();
 
 // POST /timetables - 시간표 항목 생성
-timetableRouter.post('/', createTimetableController);
+timetableRouter.post(
+  '/',
+  isAuthenticated,
+  validateCreateTimetable,
+  handleValidationErrors,
+  createTimetableController
+);
 
 // GET /timetables - 전체 시간표 항목 조회
 timetableRouter.get('/', getAllTimetablesController);
@@ -19,9 +32,15 @@ timetableRouter.get('/', getAllTimetablesController);
 timetableRouter.get('/:id', getTimetableByIdController);
 
 // PATCH /timetables/:id - ID로 시간표 항목 정보 수정
-timetableRouter.patch('/:id', updateTimetableController);
+timetableRouter.patch(
+  '/:id',
+  isAuthenticated,
+  validateUpdateTimetable,
+  handleValidationErrors,
+  updateTimetableController
+);
 
 // DELETE /timetables/:id - ID로 시간표 항목 삭제
-timetableRouter.delete('/:id', deleteTimetableController);
+timetableRouter.delete('/:id', isAuthenticated, deleteTimetableController);
 
 export default timetableRouter;
