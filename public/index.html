@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PickTime Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app" class="container-fluid">
+  <header class="pt-3 mb-4">
+    <h1>PickTime Dashboard</h1>
+  </header>
+
+  <main>
+    <ul class="nav nav-tabs">
+      <li class="nav-item" v-for="tab in tabs"><a class="nav-link" :class="{ active: activeTab === tab }" href="#" @click.prevent="activeTab = tab">{{ tab }}</a></li>
+    </ul>
+
+    <!-- Schools Tab -->
+    <div v-if="activeTab === 'Schools'" key="schools">
+      <div class="form-section">
+        <h4>{{ forms.school.id ? 'Edit' : 'Create' }} School</h4>
+        <form @submit.prevent="saveResource('school', 'schools')">
+          <div class="row g-3">
+            <div class="col-md-6"><input v-model="forms.school.name" class="form-control" placeholder="School Name" required></div>
+            <div class="col-md-6"><input v-model="forms.school.code" class="form-control" placeholder="School Code" required></div>
+            <div class="col-md-6"><input v-model="forms.school.region" class="form-control" placeholder="Region" required></div>
+            <div class="col-md-6"><input v-model="forms.school.type" class="form-control" placeholder="Type" required></div>
+            <div class="col-md-4"><input v-model.number="forms.school.max_grade" type="number" class="form-control" placeholder="Max Grade" required></div>
+            <div class="col-md-4"><input v-model.number="forms.school.max_real_class" type="number" class="form-control" placeholder="Max Real Classes" required></div>
+            <div class="col-md-4"><input v-model.number="forms.school.max_virtual_class" type="number" class="form-control" placeholder="Max Virtual Classes" required></div>
+          </div>
+          <div class="mt-3"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary ms-2" @click="resetForm('school')">Clear</button></div>
+        </form>
+      </div>
+      <div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>ID</th><th>Name</th><th>Code</th><th>Region</th><th>Actions</th></tr></thead><tbody><tr v-for="item in resources.schools"><td>{{item.id}}</td><td>{{item.name}}</td><td>{{item.code}}</td><td>{{item.region}}</td><td><button class="btn btn-sm btn-warning" @click="editResource('school', item)">E</button> <button class="btn btn-sm btn-danger" @click="deleteResource('schools', item.id)">D</button></td></tr></tbody></table></div>
+    </div>
+
+    <!-- Teachers Tab -->
+    <div v-if="activeTab === 'Teachers'" key="teachers">
+      <div v-if="!resources.schools.length" class="alert alert-warning">Please create a School before adding a Teacher.</div>
+      <div class="form-section">
+        <h4>{{ forms.teacher.id ? 'Edit' : 'Create' }} Teacher</h4>
+        <form @submit.prevent="saveResource('teacher', 'teachers')">
+          <div class="row g-3">
+            <div class="col-md-4"><input v-model="forms.teacher.name" class="form-control" placeholder="Teacher Name" required :disabled="!resources.schools.length"></div>
+            <div class="col-md-4"><input v-model="forms.teacher.code" class="form-control" placeholder="Teacher Code" :disabled="!resources.schools.length"></div>
+            <div class="col-md-4"><select v-model.number="forms.teacher.school_id" class="form-select" required :disabled="!resources.schools.length"><option :value="null" disabled>Select School</option><option v-for="s in resources.schools" :value="s.id">{{s.name}}</option></select></div>
+          </div>
+          <div class="mt-3"><button type="submit" class="btn btn-primary" :disabled="!resources.schools.length">Save</button><button type="button" class="btn btn-secondary ms-2" @click="resetForm('teacher')">Clear</button></div>
+        </form>
+      </div>
+      <div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>ID</th><th>Name</th><th>Code</th><th>School ID</th><th>Actions</th></tr></thead><tbody><tr v-for="item in resources.teachers"><td>{{item.id}}</td><td>{{item.name}}</td><td>{{item.code}}</td><td>{{item.school_id}}</td><td><button class="btn btn-sm btn-warning" @click="editResource('teacher', item)">E</button> <button class="btn btn-sm btn-danger" @click="deleteResource('teachers', item.id)">D</button></td></tr></tbody></table></div>
+    </div>
+
+    <!-- Subjects Tab -->
+    <div v-if="activeTab === 'Subjects'" key="subjects">
+        <div v-if="!resources.schools.length" class="alert alert-warning">Please create a School first.</div>
+        <div class="form-section">
+          <h4>{{ forms.subject.id ? 'Edit' : 'Create' }} Subject</h4>
+          <form @submit.prevent="saveResource('subject', 'subjects')">
+            <div class="row g-3">
+                <div class="col-md-4"><input v-model="forms.subject.name" class="form-control" placeholder="Subject Name" required></div>
+                <div class="col-md-4"><input v-model="forms.subject.short_name" class="form-control" placeholder="Short Name" required></div>
+                <div class="col-md-4"><select v-model.number="forms.subject.school_id" class="form-select" required><option :value="null" disabled>Select School</option><option v-for="s in resources.schools" :value="s.id">{{s.name}}</option></select></div>
+            </div>
+            <div class="mt-3"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary ms-2" @click="resetForm('subject')">Clear</button></div>
+          </form>
+        </div>
+        <div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>ID</th><th>Name</th><th>Short</th><th>School ID</th><th>Actions</th></tr></thead><tbody><tr v-for="item in resources.subjects"><td>{{item.id}}</td><td>{{item.name}}</td><td>{{item.short_name}}</td><td>{{item.school_id}}</td><td><button class="btn btn-sm btn-warning" @click="editResource('subject', item)">E</button> <button class="btn btn-sm btn-danger" @click="deleteResource('subjects', item.id)">D</button></td></tr></tbody></table></div>
+    </div>
+
+    <!-- Periods Tab -->
+    <div v-if="activeTab === 'Periods'" key="periods">
+        <div v-if="!resources.schools.length" class="alert alert-warning">Please create a School first.</div>
+        <div class="form-section">
+          <h4>{{ forms.period.id ? 'Edit' : 'Create' }} Period</h4>
+          <form @submit.prevent="saveResource('period', 'periods')">
+            <div class="row g-3">
+              <div class="col-md-3"><select v-model.number="forms.period.school_id" class="form-select" required><option :value="null" disabled>Select School</option><option v-for="s in resources.schools" :value="s.id">{{s.name}}</option></select></div>
+              <div class="col-md-3"><input v-model.number="forms.period.weekday" type="number" class="form-control" placeholder="Weekday (1-7)" required></div>
+              <div class="col-md-2"><input v-model.number="forms.period.period_number" type="number" class="form-control" placeholder="Period No." required></div>
+              <div class="col-md-2"><input v-model="forms.period.start_time" class="form-control" placeholder="Start (HH:mm:ss)" required></div>
+              <div class="col-md-2"><input v-model="forms.period.end_time" class="form-control" placeholder="End (HH:mm:ss)" required></div>
+            </div>
+            <div class="mt-3"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary ms-2" @click="resetForm('period')">Clear</button></div>
+          </form>
+        </div>
+        <div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>ID</th><th>Sch ID</th><th>Wday</th><th>P.No</th><th>Start</th><th>End</th><th>Actions</th></tr></thead><tbody><tr v-for="item in resources.periods"><td>{{item.id}}</td><td>{{item.school_id}}</td><td>{{item.weekday}}</td><td>{{item.period_number}}</td><td>{{item.start_time}}</td><td>{{item.end_time}}</td><td><button class="btn btn-sm btn-warning" @click="editResource('period', item)">E</button> <button class="btn btn-sm btn-danger" @click="deleteResource('periods', item.id)">D</button></td></tr></tbody></table></div>
+    </div>
+
+    <!-- Timetables Tab -->
+    <div v-if="activeTab === 'Timetables'" key="timetables">
+        <div v-if="!resources.schools.length || !resources.teachers.length || !resources.subjects.length" class="alert alert-warning">Please create Schools, Teachers, and Subjects first.</div>
+        <div class="form-section">
+          <h4>{{ forms.timetable.id ? 'Edit' : 'Create' }} Timetable Entry</h4>
+          <form @submit.prevent="saveResource('timetable', 'timetables')">
+            <div class="row g-3">
+                <div class="col-md-3"><select v-model.number="forms.timetable.school_id" class="form-select" required><option :value="null" disabled>Select School</option><option v-for="s in resources.schools" :value="s.id">{{s.name}}</option></select></div>
+                <div class="col-md-2"><input v-model.number="forms.timetable.grade" type="number" class="form-control" placeholder="Grade"></div>
+                <div class="col-md-2"><input v-model.number="forms.timetable.class_number" type="number" class="form-control" placeholder="Class No."></div>
+                <div class="col-md-2"><input v-model.number="forms.timetable.weekday" type="number" class="form-control" placeholder="Weekday"></div>
+                <div class="col-md-3"><input v-model.number="forms.timetable.period_number" type="number" class="form-control" placeholder="Period No."></div>
+                <div class="col-md-6"><select v-model.number="forms.timetable.teacher_id" class="form-select" required><option :value="null" disabled>Select Teacher</option><option v-for="t in resources.teachers" :value="t.id">{{t.name}}</option></select></div>
+                <div class="col-md-6"><select v-model.number="forms.timetable.subject_id" class="form-select" required><option :value="null" disabled>Select Subject</option><option v-for="s in resources.subjects" :value="s.id">{{s.name}}</option></select></div>
+            </div>
+            <div class="mt-3"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary ms-2" @click="resetForm('timetable')">Clear</button></div>
+          </form>
+        </div>
+        <div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>ID</th><th>Sch</th><th>G</th><th>C</th><th>W</th><th>P</th><th>Subject</th><th>Teacher</th><th>Actions</th></tr></thead><tbody><tr v-for="item in resources.timetables"><td>{{item.id}}</td><td>{{item.school_id}}</td><td>{{item.grade}}</td><td>{{item.class_number}}</td><td>{{item.weekday}}</td><td>{{item.period_number}}</td><td>{{item.subject_id}}</td><td>{{item.teacher_id}}</td><td><button class="btn btn-sm btn-warning" @click="editResource('timetable', item)">E</button> <button class="btn btn-sm btn-danger" @click="deleteResource('timetables', item.id)">D</button></td></tr></tbody></table></div>
+    </div>
+
+    <!-- Timetable View Tab -->
+    <div v-if="activeTab === 'Timetable View'" key="timetable-ui">
+      <div class="row mb-4">
+        <div class="col-md-4"><label class="form-label">School</label><select v-model="selected.school" @change="onSchoolChange" class="form-select"><option :value="null" disabled>Select school</option><option v-for="s in resources.schools" :value="s.id">{{s.name}}</option></select></div>
+        <div class="col-md-2"><label class="form-label">Grade</label><select v-model.number="selected.grade" class="form-select" :disabled="!selected.school"><option :value="null" disabled>Select grade</option><option v-for="g in schoolGrades" :value="g">{{g}}</option></select></div>
+        <div class="col-md-2"><label class="form-label">Class</label><select v-model.number="selected.class" class="form-select" :disabled="!selected.grade"><option :value="null" disabled>Select class</option><option v-for="c in schoolClasses" :value="c">{{c}}</option></select></div>
+        <div class="col-md-2"><label class="form-label">Date</label><input v-model="selected.date" type="date" class="form-control"></div>
+        <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" @click="loadTimetable" :disabled="!selected.class">Load</button></div>
+      </div>
+      <div v-if="timetableGrid.length" class="table-responsive">
+        <table class="table table-bordered text-center timetable-grid"><thead><tr><th>Period</th><th v-for="wd in weekdays">{{wd}}</th></tr></thead><tbody><tr v-for="(row, pNum) in timetableGrid"><td><strong>{{pNum+1}}</strong></td><td v-for="cell in row" @click="openChangeModal(cell)"><div v-if="cell"><div class="fw-bold">{{ getRefName('subjects', cell.subject_id) }}</div><div class="text-muted small">{{ getRefName('teachers', cell.teacher_id) }}</div></div><div v-else class="text-muted">-</div></td></tr></tbody></table>
+      </div>
+      <div v-else class="alert alert-info">Please select a school, grade, and class to load the timetable.</div>
+
+      <!-- Swap Change Form -->
+      <div class="form-section mt-4">
+        <h5>Create Swap Change (맞교환)</h5>
+        <div v-if="!resources.timetables.length" class="alert alert-warning">Load a timetable before creating a swap.</div>
+        <form @submit.prevent="createSwapChange" :disabled="!resources.timetables.length">
+          <div class="row g-3">
+            <div class="col-md-6"><label>School</label><select v-model.number="forms.swapChange.school_id" class="form-select" required><option :value="null" disabled>Select School</option><option v-for="s in resources.schools" :value="s.id">{{s.name}}</option></select></div>
+            <div class="col-md-6"><label>Swap Date</label><input v-model="forms.swapChange.swap_date" type="date" class="form-control" required></div>
+            <div class="col-md-6"><label>First Slot</label><select v-model.number="forms.swapChange.timetable1_id" class="form-select" required><option :value="null" disabled>Select First Slot</option><option v-for="t in resources.timetables" :value="t.id">ID:{{t.id}} (G:{{t.grade}},C:{{t.class_number}},W:{{t.weekday}},P:{{t.period_number}})</option></select></div>
+            <div class="col-md-6"><label>Second Slot</label><select v-model.number="forms.swapChange.timetable2_id" class="form-select" required><option :value="null" disabled>Select Second Slot</option><option v-for="t in resources.timetables" :value="t.id">ID:{{t.id}} (G:{{t.grade}},C:{{t.class_number}},W:{{t.weekday}},P:{{t.period_number}})</option></select></div>
+            <div class="col-md-12"><label>Reason</label><input v-model="forms.swapChange.reason" class="form-control" placeholder="Reason"></div>
+          </div>
+          <div class="mt-3"><button type="submit" class="btn btn-info">Create Swap Change</button></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Timetable Change Modal -->
+    <div class="modal fade" id="changeModal" tabindex="-1">
+      <div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Change Timetable Slot</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div v-if="selected.timetableSlot"><p><strong>Original:</strong> {{ getRefName('subjects', selected.timetableSlot.subject_id) }} / {{ getRefName('teachers', selected.timetableSlot.teacher_id) }}</p><hr><h6>Single Change (보결)</h6><form @submit.prevent="createSingleChange"><div class="row g-3"><div class="col-6"><label>Date</label><input v-model="forms.singleChange.change_date" type="date" class="form-control" required></div><div class="col-6"><label>Reason</label><input v-model="forms.singleChange.reason" class="form-control" placeholder="Reason"></div><div class="col-6"><label>New Subject</label><select v-model.number="forms.singleChange.new_subject_id" class="form-select" required><option :value="null" disabled>New Subject</option><option v-for="s in resources.subjects" :value="s.id">{{s.name}}</option></select></div><div class="col-6"><label>New Teacher</label><select v-model.number="forms.singleChange.new_teacher_id" class="form-select" required><option :value="null" disabled>New Teacher</option><option v-for="t in resources.teachers" :value="t.id">{{t.name}}</option></select></div></div><div class="mt-3"><button type="submit" class="btn btn-primary">Submit Single Change</button></div></form></div></div></div></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
