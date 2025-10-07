@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { UniqueConstraintError } from 'sequelize';
 import {
   createSchool,
   findAllSchools,
@@ -7,6 +8,7 @@ import {
   deleteSchool,
 } from '../services/school.service';
 import { SchoolCreationAttributes } from '../dtos/school.dto';
+import { sendSuccess, sendError } from '../utils/response';
 
 // 학교 생성 컨트롤러
 export const createSchoolController = async (
@@ -16,9 +18,18 @@ export const createSchoolController = async (
   try {
     const schoolData = req.body;
     const newSchool = await createSchool(schoolData);
-    res.status(201).json(newSchool);
+    sendSuccess(res, newSchool, 'School created successfully', 201);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create school', error });
+    if (error instanceof UniqueConstraintError) {
+      return sendError(
+        res,
+        "Creation failed: School code already exists.",
+        409,
+        "CONFLICT",
+        { fields: error.fields }
+      );
+    }
+    sendError(res, 'Failed to create school', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -26,9 +37,9 @@ export const createSchoolController = async (
 export const getAllSchoolsController = async (req: Request, res: Response) => {
   try {
     const schools = await findAllSchools();
-    res.status(200).json(schools);
+    sendSuccess(res, schools);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get schools', error });
+    sendError(res, 'Failed to get schools', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -37,18 +48,18 @@ export const getSchoolByIdController = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
 
     const school = await findSchoolById(id);
 
     if (!school) {
-      return res.status(404).json({ message: `School with id ${id} not found` });
+      return sendError(res, `School with id ${id} not found`, 404, 'NOT_FOUND');
     }
 
-    res.status(200).json(school);
+    sendSuccess(res, school);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get school', error });
+    sendError(res, 'Failed to get school', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -60,19 +71,28 @@ export const updateSchoolController = async (
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
 
     const data = req.body;
     const updatedSchool = await updateSchool(id, data);
 
     if (!updatedSchool) {
-      return res.status(404).json({ message: `School with id ${id} not found` });
+      return sendError(res, `School with id ${id} not found`, 404, 'NOT_FOUND');
     }
 
-    res.status(200).json(updatedSchool);
+    sendSuccess(res, updatedSchool, 'School updated successfully');
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update school', error });
+    if (error instanceof UniqueConstraintError) {
+      return sendError(
+        res,
+        "Update failed: School code already exists.",
+        409,
+        "CONFLICT",
+        { fields: error.fields }
+      );
+    }
+    sendError(res, 'Failed to update school', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -81,18 +101,17 @@ export const deleteSchoolController = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
 
     const deletedRowCount = await deleteSchool(id);
 
     if (deletedRowCount === 0) {
-      return res.status(404).json({ message: `School with id ${id} not found` });
+      return sendError(res, `School with id ${id} not found`, 404, 'NOT_FOUND');
     }
 
-    // 성공적으로 삭제되었을 때 204 No Content 응답
-    res.status(204).send();
+    sendSuccess(res, null, 'School deleted successfully', 204);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete school', error });
+    sendError(res, 'Failed to delete school', 500, 'INTERNAL_SERVER_ERROR');
   }
 };

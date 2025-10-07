@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import {
-  ForeignKeyConstraintError,
-} from 'sequelize';
+import { ForeignKeyConstraintError } from 'sequelize';
 import {
   createTimetable,
   findAllTimetables,
@@ -11,6 +9,7 @@ import {
   deleteTimetable,
 } from '../services/timetable.service';
 import { TimetableCreationAttributes } from '../dtos/timetable.dto';
+import { sendSuccess, sendError } from '../utils/response';
 
 // 시간표 항목 생성
 export const createTimetableController = async (
@@ -20,16 +19,20 @@ export const createTimetableController = async (
   try {
     const data = req.body;
     const newTimetable = await createTimetable(data);
-    res.status(201).json(newTimetable);
+    sendSuccess(res, newTimetable, 'Timetable entry created successfully', 201);
   } catch (error) {
     if (error instanceof ForeignKeyConstraintError) {
-      return res.status(400).json({
-        message: "Creation failed due to invalid foreign key.",
-        error: `The provided school_id, subject_id, or teacher_id does not exist.`,
-        fields: error.fields,
-      });
+      return sendError(
+        res,
+        "Creation failed: Invalid foreign key.",
+        400,
+        "BAD_REQUEST",
+        {
+          error: `The provided school_id, subject_id, or teacher_id does not exist.`,
+        }
+      );
     }
-    res.status(500).json({ message: 'Failed to create timetable entry', error });
+    sendError(res, 'Failed to create timetable entry', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -37,9 +40,9 @@ export const createTimetableController = async (
 export const getAllTimetablesController = async (req: Request, res: Response) => {
   try {
     const timetables = await findAllTimetables();
-    res.status(200).json(timetables);
+    sendSuccess(res, timetables);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get timetable entries', error });
+    sendError(res, 'Failed to get timetable entries', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -48,15 +51,15 @@ export const getTimetableByIdController = async (req: Request, res: Response) =>
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const timetable = await findTimetableById(id);
     if (!timetable) {
-      return res.status(404).json({ message: `Timetable entry with id ${id} not found` });
+      return sendError(res, `Timetable entry with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(200).json(timetable);
+    sendSuccess(res, timetable);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get timetable entry', error });
+    sendError(res, 'Failed to get timetable entry', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -68,12 +71,12 @@ export const getTimetablesByClassController = async (req: Request, res: Response
     const classNumber = parseInt(req.params.classNumber, 10);
 
     if (isNaN(schoolId) || isNaN(grade) || isNaN(classNumber)) {
-      return res.status(400).json({ message: 'Invalid ID format for school, grade, or class number' });
+      return sendError(res, 'Invalid ID format for school, grade, or class number', 400, 'BAD_REQUEST');
     }
     const timetables = await findTimetablesByClass(schoolId, grade, classNumber);
-    res.status(200).json(timetables);
+    sendSuccess(res, timetables);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get timetables by class', error });
+    sendError(res, 'Failed to get timetables by class', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -86,23 +89,27 @@ export const updateTimetableController = async (
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const data = req.body;
     const updatedTimetable = await updateTimetable(id, data);
     if (!updatedTimetable) {
-      return res.status(404).json({ message: `Timetable entry with id ${id} not found` });
+      return sendError(res, `Timetable entry with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(200).json(updatedTimetable);
+    sendSuccess(res, updatedTimetable, 'Timetable entry updated successfully');
   } catch (error) {
     if (error instanceof ForeignKeyConstraintError) {
-      return res.status(400).json({
-        message: "Update failed due to invalid foreign key.",
-        error: `The provided school_id, subject_id, or teacher_id does not exist.`,
-        fields: error.fields,
-      });
+      return sendError(
+        res,
+        "Update failed: Invalid foreign key.",
+        400,
+        "BAD_REQUEST",
+        {
+          error: `The provided school_id, subject_id, or teacher_id does not exist.`,
+        }
+      );
     }
-    res.status(500).json({ message: 'Failed to update timetable entry', error });
+    sendError(res, 'Failed to update timetable entry', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -111,14 +118,14 @@ export const deleteTimetableController = async (req: Request, res: Response) => 
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const deletedRowCount = await deleteTimetable(id);
     if (deletedRowCount === 0) {
-      return res.status(404).json({ message: `Timetable entry with id ${id} not found` });
+      return sendError(res, `Timetable entry with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(204).send();
+    sendSuccess(res, null, 'Timetable entry deleted successfully', 204);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete timetable entry', error });
+    sendError(res, 'Failed to delete timetable entry', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
