@@ -4,6 +4,7 @@ import schoolRoutes from './school.routes';
 import teacherRoutes from './teacher.routes';
 import subjectRoutes from './subject.routes';
 import periodRoutes from './period.routes';
+import timetableRoutes from './timetable.routes';
 const { NotFoundError, MethodNotAllowed } = require('../errors');
 
 const router = Router();
@@ -13,6 +14,7 @@ router.use('/schools', schoolRoutes);
 router.use('/teachers', teacherRoutes);
 router.use('/subjects', subjectRoutes);
 router.use('/periods', periodRoutes);
+router.use('/timetables', timetableRoutes);
 
 // The 405 Handler for unhandled API routes
 // This should be the last middleware on this router

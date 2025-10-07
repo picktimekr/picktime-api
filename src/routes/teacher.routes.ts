@@ -6,11 +6,18 @@ import {
   updateTeacherController,
   deleteTeacherController,
 } from '../controllers/teacher.controller';
+import { handleValidationErrors } from '../middlewares/validator.middleware';
+import {
+  validateCreateTeacher,
+  validateUpdateTeacher,
+} from '../validators/teacher.validator';
+
+import { isAuthenticated } from '../middlewares/auth.middleware';
 
 const teacherRouter = Router();
 
 // POST /teachers - 선생님 생성
-teacherRouter.post('/', createTeacherController);
+teacherRouter.post('/', isAuthenticated, validateCreateTeacher, handleValidationErrors, createTeacherController);
 
 // GET /teachers - 전체 선생님 조회
 teacherRouter.get('/', getAllTeachersController);
@@ -19,9 +26,15 @@ teacherRouter.get('/', getAllTeachersController);
 teacherRouter.get('/:id', getTeacherByIdController);
 
 // PATCH /teachers/:id - ID로 선생님 정보 수정
-teacherRouter.patch('/:id', updateTeacherController);
+teacherRouter.patch(
+  '/:id',
+  isAuthenticated,
+  validateUpdateTeacher,
+  handleValidationErrors,
+  updateTeacherController
+);
 
 // DELETE /teachers/:id - ID로 선생님 삭제
-teacherRouter.delete('/:id', deleteTeacherController);
+teacherRouter.delete('/:id', isAuthenticated, deleteTeacherController);
 
 export default teacherRouter;

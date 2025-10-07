@@ -9,6 +9,7 @@ import {
   deletePeriod,
 } from '../services/period.service';
 import { PeriodCreationAttributes } from '../dtos/period.dto';
+import { sendSuccess, sendError } from '../utils/response';
 
 // 교시 생성
 export const createPeriodController = async (
@@ -18,15 +19,17 @@ export const createPeriodController = async (
   try {
     const data = req.body;
     const newPeriod = await createPeriod(data);
-    res.status(201).json(newPeriod);
+    sendSuccess(res, newPeriod, 'Period created successfully', 201);
   } catch (error) {
     if (error instanceof ForeignKeyConstraintError) {
-      return res.status(400).json({
-        message: "Creation failed: Invalid school_id.",
-        error: `The provided school_id does not exist.`,
-      });
+      return sendError(
+        res,
+        "Creation failed: The provided school_id does not exist.",
+        400,
+        "BAD_REQUEST"
+      );
     }
-    res.status(500).json({ message: 'Failed to create period', error });
+    sendError(res, 'Failed to create period', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -34,9 +37,9 @@ export const createPeriodController = async (
 export const getAllPeriodsController = async (req: Request, res: Response) => {
   try {
     const periods = await findAllPeriods();
-    res.status(200).json(periods);
+    sendSuccess(res, periods);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get periods', error });
+    sendError(res, 'Failed to get periods', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -45,15 +48,15 @@ export const getPeriodByIdController = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const period = await findPeriodById(id);
     if (!period) {
-      return res.status(404).json({ message: `Period with id ${id} not found` });
+      return sendError(res, `Period with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(200).json(period);
+    sendSuccess(res, period);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get period', error });
+    sendError(res, 'Failed to get period', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -62,12 +65,12 @@ export const getPeriodsBySchoolIdController = async (req: Request, res: Response
   try {
     const schoolId = parseInt(req.params.schoolId, 10);
     if (isNaN(schoolId)) {
-      return res.status(400).json({ message: 'Invalid School ID format' });
+      return sendError(res, 'Invalid School ID format', 400, 'BAD_REQUEST');
     }
     const periods = await findPeriodsBySchoolId(schoolId);
-    res.status(200).json(periods);
+    sendSuccess(res, periods);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get periods by school', error });
+    sendError(res, 'Failed to get periods by school', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -79,22 +82,24 @@ export const updatePeriodController = async (
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const data = req.body;
     const updatedPeriod = await updatePeriod(id, data);
     if (!updatedPeriod) {
-      return res.status(404).json({ message: `Period with id ${id} not found` });
+      return sendError(res, `Period with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(200).json(updatedPeriod);
+    sendSuccess(res, updatedPeriod, 'Period updated successfully');
   } catch (error) {
     if (error instanceof ForeignKeyConstraintError) {
-      return res.status(400).json({
-        message: "Update failed: Invalid school_id.",
-        error: `The provided school_id does not exist.`,
-      });
+      return sendError(
+        res,
+        "Update failed: The provided school_id does not exist.",
+        400,
+        "BAD_REQUEST"
+      );
     }
-    res.status(500).json({ message: 'Failed to update period', error });
+    sendError(res, 'Failed to update period', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -103,14 +108,14 @@ export const deletePeriodController = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const deletedRowCount = await deletePeriod(id);
     if (deletedRowCount === 0) {
-      return res.status(404).json({ message: `Period with id ${id} not found` });
+      return sendError(res, `Period with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(204).send();
+    sendSuccess(res, null, 'Period deleted successfully', 204);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete period', error });
+    sendError(res, 'Failed to delete period', 500, 'INTERNAL_SERVER_ERROR');
   }
 };

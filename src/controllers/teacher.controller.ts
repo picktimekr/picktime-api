@@ -7,11 +7,12 @@ import {
   createTeacher,
   findAllTeachers,
   findTeacherById,
-  findTeachersBySchoolId, // 추가
+  findTeachersBySchoolId,
   updateTeacher,
   deleteTeacher,
 } from '../services/teacher.service';
 import { TeacherCreationAttributes } from '../dtos/teacher.dto';
+import { sendSuccess, sendError } from '../utils/response';
 
 // 선생님 생성
 export const createTeacherController = async (
@@ -21,23 +22,27 @@ export const createTeacherController = async (
   try {
     const teacherData = req.body;
     const newTeacher = await createTeacher(teacherData);
-    res.status(201).json(newTeacher);
+    sendSuccess(res, newTeacher, 'Teacher created successfully', 201);
   } catch (error) {
     if (error instanceof UniqueConstraintError) {
-      return res.status(409).json({
-        message: "Creation failed due to a conflict.",
-        error: "A teacher with the same unique value already exists.",
-        fields: error.fields,
-      });
+      return sendError(
+        res,
+        'Creation failed: A teacher with the same unique value already exists.',
+        409,
+        'CONFLICT',
+        { fields: error.fields }
+      );
     }
     if (error instanceof ForeignKeyConstraintError) {
-      return res.status(400).json({
-        message: "Creation failed due to invalid foreign key.",
-        error: `The provided school_id does not exist.`,
-        fields: error.fields,
-      });
+      return sendError(
+        res,
+        'Creation failed: The provided school_id does not exist.',
+        400,
+        'BAD_REQUEST',
+        { fields: error.fields }
+      );
     }
-    res.status(500).json({ message: 'Failed to create teacher', error });
+    sendError(res, 'Failed to create teacher', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -45,9 +50,9 @@ export const createTeacherController = async (
 export const getAllTeachersController = async (req: Request, res: Response) => {
   try {
     const teachers = await findAllTeachers();
-    res.status(200).json(teachers);
+    sendSuccess(res, teachers);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get teachers', error });
+    sendError(res, 'Failed to get teachers', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -56,15 +61,15 @@ export const getTeacherByIdController = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const teacher = await findTeacherById(id);
     if (!teacher) {
-      return res.status(404).json({ message: `Teacher with id ${id} not found` });
+      return sendError(res, `Teacher with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(200).json(teacher);
+    sendSuccess(res, teacher);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get teacher', error });
+    sendError(res, 'Failed to get teacher', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -73,12 +78,12 @@ export const getTeachersBySchoolIdController = async (req: Request, res: Respons
   try {
     const schoolId = parseInt(req.params.schoolId, 10);
     if (isNaN(schoolId)) {
-      return res.status(400).json({ message: 'Invalid School ID format' });
+      return sendError(res, 'Invalid School ID format', 400, 'BAD_REQUEST');
     }
     const teachers = await findTeachersBySchoolId(schoolId);
-    res.status(200).json(teachers);
+    sendSuccess(res, teachers);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get teachers by school', error });
+    sendError(res, 'Failed to get teachers by school', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -90,30 +95,34 @@ export const updateTeacherController = async (
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const data = req.body;
     const updatedTeacher = await updateTeacher(id, data);
     if (!updatedTeacher) {
-      return res.status(404).json({ message: `Teacher with id ${id} not found` });
+      return sendError(res, `Teacher with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(200).json(updatedTeacher);
+    sendSuccess(res, updatedTeacher, 'Teacher updated successfully');
   } catch (error) {
     if (error instanceof UniqueConstraintError) {
-      return res.status(409).json({
-        message: 'Update failed due to a conflict.',
-        error: 'A teacher with the same unique value already exists.',
-        fields: error.fields,
-      });
+      return sendError(
+        res,
+        'Update failed: A teacher with the same unique value already exists.',
+        409,
+        'CONFLICT',
+        { fields: error.fields }
+      );
     }
     if (error instanceof ForeignKeyConstraintError) {
-      return res.status(400).json({
-        message: "Update failed due to invalid foreign key.",
-        error: `The provided school_id does not exist.`,
-        fields: error.fields,
-      });
+      return sendError(
+        res,
+        'Update failed: The provided school_id does not exist.',
+        400,
+        'BAD_REQUEST',
+        { fields: error.fields }
+      );
     }
-    res.status(500).json({ message: 'Failed to update teacher', error });
+    sendError(res, 'Failed to update teacher', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -122,15 +131,15 @@ export const deleteTeacherController = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const deletedRowCount = await deleteTeacher(id);
     if (deletedRowCount === 0) {
-      return res.status(404).json({ message: `Teacher with id ${id} not found` });
+      return sendError(res, `Teacher with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(204).send();
+    sendSuccess(res, null, 'Teacher deleted successfully', 204);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete teacher', error });
+    sendError(res, 'Failed to delete teacher', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 

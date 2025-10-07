@@ -1,4 +1,4 @@
-import Period from '../models/period.model';
+import { Period } from '../models';
 import { PeriodCreationAttributes } from '../dtos/period.dto';
 
 // 교시 생성

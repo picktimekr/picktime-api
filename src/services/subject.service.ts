@@ -1,4 +1,4 @@
-import Subject from '../models/subject.model';
+import { Subject } from '../models';
 import { SubjectCreationAttributes } from '../dtos/subject.dto';
 
 // 과목 생성

@@ -1,6 +1,6 @@
 
 // src/services/user.service.ts
-import User from '../models/user.model';
+import { User } from '../models';
 
 export const getAllUsers = async () => {
   const users = await User.findAll();

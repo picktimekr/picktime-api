@@ -38,7 +38,8 @@ User.init(
     sequelize,
     tableName: 'users',
     timestamps: true, // createdAt, updatedAt 컬럼 자동 생성
-    underscored: true
+    underscored: true,
+    paranoid: true // Soft delete 활성화
   }
 );
 

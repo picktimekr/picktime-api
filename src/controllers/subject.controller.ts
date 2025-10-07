@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import {
-  UniqueConstraintError,
   ForeignKeyConstraintError,
 } from 'sequelize';
 import {
@@ -12,6 +11,7 @@ import {
   deleteSubject,
 } from '../services/subject.service';
 import { SubjectCreationAttributes } from '../dtos/subject.dto';
+import { sendSuccess, sendError } from '../utils/response';
 
 // 과목 생성
 export const createSubjectController = async (
@@ -21,16 +21,17 @@ export const createSubjectController = async (
   try {
     const data = req.body;
     const newSubject = await createSubject(data);
-    res.status(201).json(newSubject);
+    sendSuccess(res, newSubject, 'Subject created successfully', 201);
   } catch (error) {
     if (error instanceof ForeignKeyConstraintError) {
-      return res.status(400).json({
-        message: "Creation failed: Invalid school_id.",
-        error: `The provided school_id does not exist.`,
-      });
+      return sendError(
+        res,
+        "Creation failed: The provided school_id does not exist.",
+        400,
+        "BAD_REQUEST"
+      );
     }
-    // Unique constraint error는 이 모델에 unique 필드가 없으므로 일단 제외합니다.
-    res.status(500).json({ message: 'Failed to create subject', error });
+    sendError(res, 'Failed to create subject', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -38,9 +39,9 @@ export const createSubjectController = async (
 export const getAllSubjectsController = async (req: Request, res: Response) => {
   try {
     const subjects = await findAllSubjects();
-    res.status(200).json(subjects);
+    sendSuccess(res, subjects);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get subjects', error });
+    sendError(res, 'Failed to get subjects', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -49,15 +50,15 @@ export const getSubjectByIdController = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const subject = await findSubjectById(id);
     if (!subject) {
-      return res.status(404).json({ message: `Subject with id ${id} not found` });
+      return sendError(res, `Subject with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(200).json(subject);
+    sendSuccess(res, subject);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get subject', error });
+    sendError(res, 'Failed to get subject', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -66,12 +67,12 @@ export const getSubjectsBySchoolIdController = async (req: Request, res: Respons
   try {
     const schoolId = parseInt(req.params.schoolId, 10);
     if (isNaN(schoolId)) {
-      return res.status(400).json({ message: 'Invalid School ID format' });
+      return sendError(res, 'Invalid School ID format', 400, 'BAD_REQUEST');
     }
     const subjects = await findSubjectsBySchoolId(schoolId);
-    res.status(200).json(subjects);
+    sendSuccess(res, subjects);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to get subjects by school', error });
+    sendError(res, 'Failed to get subjects by school', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -83,22 +84,24 @@ export const updateSubjectController = async (
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const data = req.body;
     const updatedSubject = await updateSubject(id, data);
     if (!updatedSubject) {
-      return res.status(404).json({ message: `Subject with id ${id} not found` });
+      return sendError(res, `Subject with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(200).json(updatedSubject);
+    sendSuccess(res, updatedSubject, 'Subject updated successfully');
   } catch (error) {
     if (error instanceof ForeignKeyConstraintError) {
-      return res.status(400).json({
-        message: 'Update failed: Invalid school_id.',
-        error: `The provided school_id does not exist.`,
-      });
+      return sendError(
+        res,
+        "Update failed: The provided school_id does not exist.",
+        400,
+        "BAD_REQUEST"
+      );
     }
-    res.status(500).json({ message: 'Failed to update subject', error });
+    sendError(res, 'Failed to update subject', 500, 'INTERNAL_SERVER_ERROR');
   }
 };
 
@@ -107,14 +110,14 @@ export const deleteSubjectController = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid ID format' });
+      return sendError(res, 'Invalid ID format', 400, 'BAD_REQUEST');
     }
     const deletedRowCount = await deleteSubject(id);
     if (deletedRowCount === 0) {
-      return res.status(404).json({ message: `Subject with id ${id} not found` });
+      return sendError(res, `Subject with id ${id} not found`, 404, 'NOT_FOUND');
     }
-    res.status(204).send();
+    sendSuccess(res, null, 'Subject deleted successfully', 204);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to delete subject', error });
+    sendError(res, 'Failed to delete subject', 500, 'INTERNAL_SERVER_ERROR');
   }
 };

@@ -1,4 +1,4 @@
-import School from "../models/school.model";
+import { School } from '../models';
 import { SchoolCreationAttributes } from "../dtos/school.dto";
 
 export const createSchool = async (
