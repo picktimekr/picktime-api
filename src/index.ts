@@ -13,12 +13,11 @@ const app = express();
 app.use(express.json()); // JSON body parser
 app.use(loggingMiddleware); // Logging middleware
 
+// public 폴더의 정적 파일(index.html 등)을 서비스합니다.
+app.use(express.static('public'));
+
 // Routes
 app.use('/api', mainRouter);
-
-app.get('/', (req, res) => {
-  res.send('Hello, World!');
-});
 
 // Error Middleware
 app.use(errorMiddleware);

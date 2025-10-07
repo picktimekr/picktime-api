@@ -6,6 +6,8 @@ import Teacher from './teacher.model';
 import Subject from './subject.model';
 import Period from './period.model';
 import Timetable from './timetable.model';
+import Change from './change.model';
+import Swap from './swap.model';
 
 // 향후 모델 간 관계(association) 설정이 필요할 경우 이 파일에서 처리하면 좋습니다.
 
@@ -18,4 +20,6 @@ export {
   Subject,
   Period,
   Timetable,
+  Change,
+  Swap,
 };

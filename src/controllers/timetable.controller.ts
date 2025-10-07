@@ -63,7 +63,7 @@ export const getTimetableByIdController = async (req: Request, res: Response) =>
   }
 };
 
-// 특정 학급의 시간표 조회
+// 특정 학급의 시간표 조회 (특정 날짜 기준)
 export const getTimetablesByClassController = async (req: Request, res: Response) => {
   try {
     const schoolId = parseInt(req.params.schoolId, 10);
@@ -73,10 +73,11 @@ export const getTimetablesByClassController = async (req: Request, res: Response
     if (isNaN(schoolId) || isNaN(grade) || isNaN(classNumber)) {
       return sendError(res, 'Invalid ID format for school, grade, or class number', 400, 'BAD_REQUEST');
     }
+
     const timetables = await findTimetablesByClass(schoolId, grade, classNumber);
     sendSuccess(res, timetables);
   } catch (error) {
-    sendError(res, 'Failed to get timetables by class', 500, 'INTERNAL_SERVER_ERROR');
+    sendError(res, 'Failed to get timetables by class', 500, 'INTERNAL_SERVER_ERROR', error);
   }
 };
 

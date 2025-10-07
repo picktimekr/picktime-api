@@ -1,25 +1,40 @@
-import { Timetable } from '../models';
+import { Op } from 'sequelize';
+import { Timetable, Change, Swap } from '../models';
 import { TimetableCreationAttributes } from '../dtos/timetable.dto';
 
-// 시간표 항목 생성
-export const createTimetable = async (data: TimetableCreationAttributes) => {
-  const newTimetable = await Timetable.create(data);
-  return newTimetable;
-};
-
-// 모든 시간표 항목 조회
-export const findAllTimetables = async () => {
-  const timetables = await Timetable.findAll();
-  return timetables;
-};
-
-// ID로 시간표 항목 상세 조회
-export const findTimetableById = async (id: number) => {
+// --- Basic CRUD ---
+export const createTimetable = async (data: TimetableCreationAttributes) => Timetable.create(data);
+export const findAllTimetables = async () => Timetable.findAll();
+export const findTimetableById = async (id: number) => Timetable.findByPk(id);
+export const updateTimetable = async (id: number, data: Partial<TimetableCreationAttributes>) => {
   const timetable = await Timetable.findByPk(id);
-  return timetable;
+  if (!timetable) return null;
+  return timetable.update(data);
 };
+export const deleteTimetable = async (id: number) => Timetable.destroy({ where: { id } });
 
-// 특정 학급의 시간표 조회
+// --- Advanced Logic ---
+
+// 최종 시간표 슬롯을 위한 새로운 타입 정의 (상속 대신 명시적 정의)
+interface EffectiveTimetableSlot {
+  id: number;
+  school_id: number;
+  grade: number;
+  class_number: number;
+  class_type: string;
+  weekday: number;
+  period_number: number;
+  subject_id: number | null;
+  teacher_id: number | null;
+  is_fixed: boolean;
+  created_at?: Date;
+  updated_at?: Date;
+  deleted_at?: Date | null;
+  is_changed?: boolean;
+  is_swapped?: boolean;
+  reason?: string | null;
+}
+
 export const findTimetablesByClass = async (
   schoolId: number,
   grade: number,
@@ -34,25 +49,4 @@ export const findTimetablesByClass = async (
     order: [['weekday', 'ASC'], ['period_number', 'ASC']],
   });
   return timetables;
-};
-
-// 시간표 항목 정보 수정
-export const updateTimetable = async (
-  id: number,
-  data: Partial<TimetableCreationAttributes>
-) => {
-  const timetable = await findTimetableById(id);
-  if (!timetable) {
-    return null;
-  }
-  await timetable.update(data);
-  return timetable;
-};
-
-// 시간표 항목 삭제 (Soft Delete)
-export const deleteTimetable = async (id: number) => {
-  const deletedRowCount = await Timetable.destroy({
-    where: { id },
-  });
-  return deletedRowCount;
 };
