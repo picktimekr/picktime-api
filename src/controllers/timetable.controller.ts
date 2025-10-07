@@ -4,7 +4,7 @@ import {
   createTimetable,
   findAllTimetables,
   findTimetableById,
-  findTimetablesByClass,
+  getEffectiveTimetableForClass,
   updateTimetable,
   deleteTimetable,
 } from '../services/timetable.service';
@@ -63,17 +63,22 @@ export const getTimetableByIdController = async (req: Request, res: Response) =>
   }
 };
 
-// 특정 학급의 시간표 조회
+// 특정 학급의 시간표 조회 (특정 날짜 기준)
 export const getTimetablesByClassController = async (req: Request, res: Response) => {
   try {
     const schoolId = parseInt(req.params.schoolId, 10);
     const grade = parseInt(req.params.grade, 10);
     const classNumber = parseInt(req.params.classNumber, 10);
+    const date = req.query.date as string;
 
     if (isNaN(schoolId) || isNaN(grade) || isNaN(classNumber)) {
       return sendError(res, 'Invalid ID format for school, grade, or class number', 400, 'BAD_REQUEST');
     }
-    const timetables = await findTimetablesByClass(schoolId, grade, classNumber);
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return sendError(res, 'A valid date in YYYY-MM-DD format is required as a query parameter.', 400, 'BAD_REQUEST');
+    }
+
+    const timetables = await getEffectiveTimetableForClass(schoolId, grade, classNumber, date);
     sendSuccess(res, timetables);
   } catch (error) {
     sendError(res, 'Failed to get timetables by class', 500, 'INTERNAL_SERVER_ERROR');
