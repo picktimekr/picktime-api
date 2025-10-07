@@ -1,6 +1,7 @@
 
 // src/controllers/user.controller.ts
 import { Request, Response } from 'express';
+import { UniqueConstraintError } from 'sequelize';
 import * as userService from '../services/user.service';
 
 export const handleGetAllUsers = async (req: Request, res: Response) => {
@@ -21,6 +22,12 @@ export const handleCreateUser = async (req: Request, res: Response) => {
     const newUser = await userService.createUser(name, email);
     res.status(201).json(newUser);
   } catch (error) {
+    if (error instanceof UniqueConstraintError) {
+      return res.status(409).json({
+        message: "Creation failed: Email already exists.",
+        fields: error.fields,
+      });
+    }
     res.status(500).json({ message: 'Error creating user', error });
   }
 };

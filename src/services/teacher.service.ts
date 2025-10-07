@@ -1,4 +1,4 @@
-import Teacher from '../models/teacher.model';
+import { Teacher } from '../models';
 import { TeacherCreationAttributes } from '../dtos/teacher.dto';
 
 // 선생님 생성
