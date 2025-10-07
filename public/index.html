@@ -124,7 +124,17 @@
         <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" @click="loadTimetable" :disabled="!selected.class">Load</button></div>
       </div>
       <div v-if="timetableGrid.length" class="table-responsive">
-        <table class="table table-bordered text-center timetable-grid"><thead><tr><th>Period</th><th v-for="wd in weekdays">{{wd}}</th></tr></thead><tbody><tr v-for="(row, pNum) in timetableGrid"><td><strong>{{pNum+1}}</strong></td><td v-for="cell in row" @click="openChangeModal(cell)"><div v-if="cell"><div class="fw-bold">{{ getRefName('subjects', cell.subject_id) }}</div><div class="text-muted small">{{ getRefName('teachers', cell.teacher_id) }}</div></div><div v-else class="text-muted">-</div></td></tr></tbody></table>
+        <table class="table table-bordered text-center timetable-grid"><thead><tr><th>Period</th><th v-for="wd in weekdays">{{wd}}</th></tr></thead><tbody><tr v-for="(row, pNum) in timetableGrid"><td><strong>{{pNum+1}}</strong></td>              <td v-for="cell in row" @click="openChangeModal(cell)" :class="{ 'table-warning': cell && cell.is_changed, 'table-info': cell && cell.is_swapped }" :title="cell && (cell.reason || (cell.is_swapped ? 'Swapped' : ''))">
+                <div v-if="cell">
+                  <div class="fw-bold">
+                    {{ getRefName('subjects', cell.subject_id) }}
+                    <span v-if="cell.is_changed" class="badge bg-danger rounded-pill ms-1">보결</span>
+                    <span v-if="cell.is_swapped" class="badge bg-primary rounded-pill ms-1">교환</span>
+                  </div>
+                  <div class="text-muted small">{{ getRefName('teachers', cell.teacher_id) }}</div>
+                </div>
+                <div v-else class="text-muted">-</div>
+              </td></tr></tbody></table>
       </div>
       <div v-else class="alert alert-info">Please select a school, grade, and class to load the timetable.</div>
 

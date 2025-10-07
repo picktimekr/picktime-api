@@ -6,10 +6,8 @@ interface ChangeAttributes {
   id: number;
   timetable_id: number;
   change_date: string;
-  change_type: 'single' | 'swap';
   new_subject_id: number | null;
   new_teacher_id: number | null;
-  swap_id: number | null;
   reason: string | null;
   created_by: number;
   created_at?: Date;
@@ -27,10 +25,8 @@ class Change
   public id!: number;
   public timetable_id!: number;
   public change_date!: string;
-  public change_type!: 'single' | 'swap';
   public new_subject_id!: number | null;
   public new_teacher_id!: number | null;
-  public swap_id!: number | null;
   public reason!: string | null;
   public created_by!: number;
 
@@ -56,10 +52,6 @@ Change.init(
       type: DataTypes.DATEONLY, // 날짜만 저장
       allowNull: false,
     },
-    change_type: {
-      type: DataTypes.ENUM('single', 'swap'),
-      allowNull: false,
-    },
     new_subject_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -69,11 +61,6 @@ Change.init(
       type: DataTypes.INTEGER,
       allowNull: true,
       references: { model: 'teachers', key: 'id' },
-    },
-    swap_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: { model: 'swaps', key: 'id' },
     },
     reason: {
       type: DataTypes.STRING,

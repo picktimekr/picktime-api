@@ -2,7 +2,7 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../utils/database';
 
 // 모델의 속성을 정의하는 인터페이스
-interface TimetableAttributes {
+export interface TimetableAttributes {
   id: number;
   school_id: number;
   grade: number;

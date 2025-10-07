@@ -10,7 +10,7 @@ export const handleGetAllUsers = async (req: Request, res: Response) => {
     const users = await userService.getAllUsers();
     sendSuccess(res, users);
   } catch (error) {
-    sendError(res, 'Failed to get users', 500, 'INTERNAL_SERVER_ERROR');
+    sendError(res, 'Failed to get users', 500, 'INTERNAL_SERVER_ERROR', error);
   }
 };
 

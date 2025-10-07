@@ -51,22 +51,74 @@ const app = new Vue({
     async loadTimetable() {
         if (!this.selected.school || !this.selected.grade || !this.selected.class || !this.selected.date) return;
         const { school, grade, 'class': classNum, date } = this.selected;
+
         try {
-            const url = `${this.apiBase}/schools/${school}/grades/${grade}/classes/${classNum}/timetable?date=${date}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const result = await response.json();
-            if (result.success) {
-                this.resources.timetables = result.data;
-                this.buildTimetableGrid();
-            } else { alert(`Error loading timetable: ${result.message}`); }
-        } catch (error) { console.error('Timetable load error:', error); }
+            // 1. 여러 API를 동시에 호출하여 필요한 모든 데이터를 가져옵니다.
+            const [baseTimetableRes, changesRes, swapsRes] = await Promise.all([
+                fetch(`${this.apiBase}/schools/${school}/grades/${grade}/classes/${classNum}/timetable`),
+                fetch(`${this.apiBase}/changes?change_date=${date}`),
+                fetch(`${this.apiBase}/swaps?swap_date=${date}`)
+            ]);
+
+            const baseTimetableResult = await baseTimetableRes.json();
+            const changesResult = await changesRes.json();
+            const swapsResult = await swapsRes.json();
+
+            if (!baseTimetableResult.success || !changesResult.success || !swapsResult.success) {
+                throw new Error('Failed to fetch all necessary data.');
+            }
+
+            // 2. 프론트엔드에서 최종 시간표를 계산합니다.
+            const effectiveTimetable = this.calculateEffectiveTimetable(baseTimetableResult.data, changesResult.data, swapsResult.data);
+
+            // 3. 계산된 최종 시간표로 그리드를 다시 그립니다.
+            this.buildTimetableGrid(effectiveTimetable);
+
+        } catch (error) {
+            console.error('Timetable load error:', error);
+            alert('Failed to load timetable data.');
+        }
     },
-    buildTimetableGrid() {
+    calculateEffectiveTimetable(baseTimetable, changes, swaps) {
+        const finalTimetableMap = new Map(baseTimetable.map(slot => [slot.id, { ...slot }]));
+
+        // 2. 맞교환 적용
+        const schoolSwaps = swaps.filter(s => s.school_id === this.selected.school);
+        for (const swap of schoolSwaps) {
+            const slot1 = finalTimetableMap.get(swap.timetable1_id);
+            const slot2 = finalTimetableMap.get(swap.timetable2_id);
+            if (slot1 && slot2) {
+                const temp = { subject_id: slot1.subject_id, teacher_id: slot1.teacher_id };
+                slot1.subject_id = slot2.subject_id;
+                slot1.teacher_id = slot2.teacher_id;
+                slot2.subject_id = temp.subject_id;
+                slot2.teacher_id = temp.teacher_id;
+                slot1.is_swapped = true;
+                slot2.is_swapped = true;
+            }
+        }
+
+        // 3. 단순 변경 적용
+        const timetableIds = Array.from(finalTimetableMap.keys());
+        const relevantChanges = changes.filter(c => timetableIds.includes(c.timetable_id));
+        for (const change of relevantChanges) {
+            const slot = finalTimetableMap.get(change.timetable_id);
+            if (slot) {
+                slot.subject_id = change.new_subject_id;
+                slot.teacher_id = change.new_teacher_id;
+                slot.is_changed = true;
+                slot.reason = change.reason;
+                delete slot.is_swapped;
+            }
+        }
+        return Array.from(finalTimetableMap.values());
+    },
+    buildTimetableGrid(timetableData) {
         let maxPeriod = this.resources.periods.filter(p => p.school_id === this.selected.school).reduce((max, item) => Math.max(max, item.period_number), 0);
         if (maxPeriod === 0) { maxPeriod = 8; } // Default to 8 periods
         const grid = Array.from({ length: maxPeriod }, () => Array(5).fill(null));
-        this.resources.timetables.forEach(item => {
+        
+        timetableData.forEach(item => {
             if (item.weekday >= 1 && item.weekday <= 5 && item.period_number >= 1 && item.period_number <= maxPeriod) {
                 grid[item.period_number - 1][item.weekday - 1] = item;
             }
@@ -93,21 +145,23 @@ const app = new Vue({
     },
     async createSingleChange() {
         try {
-            const response = await fetch(`${this.apiBase}/changes/single`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.forms.singleChange) });
+            const response = await fetch(`${this.apiBase}/changes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.forms.singleChange) });
             const result = await response.json();
             if (result.success) {
                 alert('Change created successfully!');
                 this.changeModalInstance.hide();
+                this.loadTimetable(); // Refresh timetable view
             } else { alert(`Error: ${result.message}`); }
         } catch (error) { console.error('Submit error:', error); }
     },
     async createSwapChange() {
         try {
-            const response = await fetch(`${this.apiBase}/changes/swap`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.forms.swapChange) });
+            const response = await fetch(`${this.apiBase}/swaps`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.forms.swapChange) });
             const result = await response.json();
             if (result.success) {
                 alert('Swap created successfully!');
                 this.resetForm('swapChange');
+                this.loadTimetable(); // Refresh timetable view
             } else { alert(`Error: ${result.message}`); }
         } catch (error) { console.error('Submit error:', error); }
     },
